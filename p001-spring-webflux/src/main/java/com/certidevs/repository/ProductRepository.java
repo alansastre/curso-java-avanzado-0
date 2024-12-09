@@ -6,10 +6,13 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ProductRepository extends ReactiveCrudRepository<Product, Long> {
     Flux<Product> findByActive(Boolean active);
+    Flux<Product> findByActiveTrue();
+    Flux<Product> findByActiveFalse();
 
     Flux<Product> findByPriceBetween(Double priceStart, Double priceEnd);
 
@@ -21,5 +24,10 @@ public interface ProductRepository extends ReactiveCrudRepository<Product, Long>
     Flux<Product> findProductsWithQuantityLessThan(Integer quantity);
 
     Flux<Product> findByManufacturerId(Long manufacturerId);
+
+    Flux<Product> findByCreationDateBefore(LocalDateTime creationDate);
+
+
+
 
 }
