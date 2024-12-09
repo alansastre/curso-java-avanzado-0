@@ -198,18 +198,20 @@ public class MonoFluxTest {
      */
     @Test
     void onErrorResume() {
-       Product product = productRepository.findById(999L)
-                .flatMap(p -> Mono.<Product>error(new RuntimeException("Error")))
+
+        // Asegurarse de que exista product, porque si no devolverá Mono empty y no ejecutará el flatmap y por tanto no se lanza excepción
+       Mono<Product> productMono = productRepository.findById(product1.getId())
+                .flatMap(p -> Mono.<Product>error(new RuntimeException("Error"))) // asegurarse de que se ejecuta
                 .onErrorResume(throwable -> {
                     // log.error("Error haciendo X operacion sobre un product");
                     return Mono.just(new Product());
-                }).block();
+                });
 
-   assertNotNull(product);
-   assertNull(product.getTitle());
-//        StepVerifier.create(productMono)
-//                .expectNextMatches(product -> product.getTitle() == null)
-//                .verifyComplete();
+//   assertNotNull(product);
+//   assertNull(product.getTitle());
+        StepVerifier.create(productMono)
+                .expectNextMatches(product -> product.getTitle() == null)
+                .verifyComplete();
     }
 
     /*
@@ -262,6 +264,20 @@ public class MonoFluxTest {
 
         // java.lang.AssertionError: expectation "expectComplete" failed (expected: onComplete(); actual: onNext(
         // Product(id=1, title=Product 1, price=10.0, quantity=50, active=true, creationDate=2024-11-29T13:02:10.082572, manufacturerId=1, manufacturer=null)))
+    }
+
+    @Test
+    void fluxZip() {
+        Flux<String> titlesFlux = productRepository.findAll().map(Product::getTitle);
+        Flux<Double> pricesFlux = productRepository.findAll().map(Product::getPrice);
+
+        Flux<String> zipFlux = Flux.zip(titlesFlux, pricesFlux)
+                .map(tuple -> tuple.getT1() + " " + tuple.getT2() + " €");
+
+        StepVerifier.create(zipFlux)
+                .expectNext("Product 1 10.0 €")
+                .expectNext("Product 2 20.0 €")
+                .verifyComplete();
     }
 
 
