@@ -1,11 +1,19 @@
 package com.certidevs.entity;
 
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+@Setter
+@Getter
+@Builder
 @Table("product")
 public class Product {
 
@@ -21,4 +29,15 @@ public class Product {
     // @Transient
     // private Manufacturer manufacturer;
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return Objects.equals(id, product.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }
