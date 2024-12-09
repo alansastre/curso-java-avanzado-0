@@ -1,5 +1,6 @@
 package com.certidevs.repository;
 
+import com.certidevs.entity.Manufacturer;
 import com.certidevs.entity.Product;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,11 +22,22 @@ class ProductRepositoryTest {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private ManufacturerRepository manufacturerRepository;
+
+
+    Manufacturer manufacturer;
     Product product1;
     Product product2;
 
     @BeforeEach
     void setUp() {
+
+        manufacturer = manufacturerRepository.save(Manufacturer.builder()
+                .name("Test fabricante")
+                .foundationYear(2000)
+                .country("Spain")
+                .build()).block();
 
         product1 = Product.builder()
                 .title("Product 1")
@@ -33,6 +45,8 @@ class ProductRepositoryTest {
                 .quantity(50)
                 .active(true)
                 .creationDate(LocalDateTime.now().minusDays(10))
+                .manufacturerId(manufacturer.getId())
+                .manufacturer(manufacturer)
                 .build();
 
         product2 = Product.builder()
@@ -41,6 +55,8 @@ class ProductRepositoryTest {
                 .quantity(5)
                 .active(false)
                 .creationDate(LocalDateTime.now().minusDays(5))
+                .manufacturerId(manufacturer.getId())
+                .manufacturer(manufacturer)
                 .build();
 
 //        productRepository.save(product1).block();
@@ -49,7 +65,7 @@ class ProductRepositoryTest {
 
     @AfterEach
     void tearDown() {
-        productRepository.deleteAll().block();
+        productRepository.deleteAll().then(manufacturerRepository.deleteAll()).block();
     }
 
     @Test
@@ -100,6 +116,26 @@ class ProductRepositoryTest {
     @Test
     void findAll() {
         Flux<Product> productFlux = productRepository.findAll();
+
+
+        StepVerifier.create(productFlux)
+                .expectNext(product1, product2)
+                .verifyComplete();
+
+        StepVerifier.create(productFlux)
+                .expectNext(product1)
+                .expectNext(product2)
+                .verifyComplete();
+
+        StepVerifier.create(productFlux)
+                .expectNextMatches(product -> product.getId().equals(product1.getId()))
+                .expectNextMatches(product -> product.getId().equals(product2.getId()))
+                .verifyComplete();
+    }
+
+    @Test
+    void findAllByManufacturerId() {
+        Flux<Product> productFlux = productRepository.findByManufacturerId(manufacturer.getId());
 
 
         StepVerifier.create(productFlux)

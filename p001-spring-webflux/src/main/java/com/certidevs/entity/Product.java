@@ -26,8 +26,8 @@ public class Product {
     private LocalDateTime creationDate;
     private Long manufacturerId;
 
-    // @Transient
-    // private Manufacturer manufacturer;
+    @Transient
+    private Manufacturer manufacturer;
 
     @Override
     public boolean equals(Object o) {

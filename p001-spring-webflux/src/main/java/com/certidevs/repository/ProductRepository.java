@@ -20,4 +20,6 @@ public interface ProductRepository extends ReactiveCrudRepository<Product, Long>
             """)
     Flux<Product> findProductsWithQuantityLessThan(Integer quantity);
 
+    Flux<Product> findByManufacturerId(Long manufacturerId);
+
 }
