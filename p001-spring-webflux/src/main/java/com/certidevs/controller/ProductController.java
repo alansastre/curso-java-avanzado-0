@@ -78,7 +78,7 @@ public class ProductController {
                 .map(ResponseEntity::ok) // 200
                 .defaultIfEmpty(ResponseEntity.notFound().build()) // 404
                 .onErrorResume(e -> {
-                    log.warn("Error creating new product", e);
+                    log.warn("Error updating product {}", id, e);
                     return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build()); // 409
                 });
     }
@@ -91,7 +91,7 @@ public class ProductController {
                         productService.deleteById(existingProduct.getId()).then(Mono.just(ResponseEntity.noContent().<Void>build()))) // 204
                 .defaultIfEmpty(ResponseEntity.notFound().build()) // 404
                 .onErrorResume(e -> {
-                    log.warn("Error creating new product", e);
+                    log.warn("Error deleting product {}", id, e);
                     return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build()); // 409
                 });
 
@@ -104,6 +104,35 @@ public class ProductController {
 //                });
 
     }
+
+    @GetMapping("increase/{percentage}")
+    public Mono<ResponseEntity<Flux<Product>>> findAll(@PathVariable Double percentage) {
+        if (percentage <= 0 || percentage > 50)
+            return Mono.just(ResponseEntity.badRequest().build()); // 400
+
+        return Mono.just(
+                ResponseEntity.ok(productService.increasePriceOfActiveProducts(percentage))
+        )
+                .onErrorResume(e -> {
+            log.warn("Error increasing price of active products", e);
+            return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build()); // 409
+        });
+
+    }
+
+    @GetMapping("reduce/{id}")
+    public Mono<ResponseEntity<Product>> reduceQuantity(@PathVariable Long id, @RequestParam Integer amount) {
+        return productService.reduceQuantity(id, amount)
+                .map(ResponseEntity::ok)
+                .onErrorResume(e -> {
+                    log.warn("Error reducing quantity of product", e);
+                    if (e instanceof IllegalArgumentException)
+                        return Mono.just(ResponseEntity.badRequest().build()); // 400
+                    else
+                        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).build()); // 409
+                });
+    }
+
 
 
 
