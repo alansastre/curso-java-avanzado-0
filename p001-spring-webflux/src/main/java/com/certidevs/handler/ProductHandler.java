@@ -58,12 +58,20 @@ public class ProductHandler {
 
     public Mono<ServerResponse> deleteById(ServerRequest request) {
         Long id = Long.valueOf(request.pathVariable("id"));
-        return productService.deleteById(id)
-                .then(ServerResponse.noContent().build())
-                .switchIfEmpty(ServerResponse.notFound().build())
-                .onErrorResume(e -> {
-                    return ServerResponse.status(HttpStatus.CONFLICT).build(); // 409
-                });
+
+       return productService.findById(id)
+                .flatMap(existingProduct ->
+                        productService.deleteById(existingProduct.getId()).then(ServerResponse.noContent().build())) // 204
+                .switchIfEmpty(ServerResponse.notFound().build()) // 404
+                .onErrorResume(e -> ServerResponse.status(HttpStatus.CONFLICT).build());
+
+
+//        return productService.deleteById(id)
+//                .then(ServerResponse.noContent().build())
+//                .switchIfEmpty(ServerResponse.notFound().build())
+//                .onErrorResume(e -> {
+//                    return ServerResponse.status(HttpStatus.CONFLICT).build(); // 409
+//                });
     }
 
     public Mono<ServerResponse> increasePriceOfActiveProducts(ServerRequest request) {

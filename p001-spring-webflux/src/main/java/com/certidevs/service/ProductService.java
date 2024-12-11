@@ -1,5 +1,6 @@
 package com.certidevs.service;
 
+import com.certidevs.dto.ProductStoreDTO;
 import com.certidevs.entity.Product;
 import com.certidevs.repository.ProductRepository;
 import lombok.AllArgsConstructor;
@@ -110,6 +111,32 @@ public class ProductService {
         // Alternativa:  setActive(false)
         return productRepository.deleteById(id);
     }
+
+
+    // WebClient para hacer fetch de datos remotos
+    public Mono<Product> findByIdWithManufacturer() {
+        return null;
+    }
+    public Flux<Product> findAllWithManufacturers() {
+        return null;
+    }
+    public Mono<Product> findByIdWithManufacturerAndReviews() {
+        return null;
+    }
+    public Mono<Product> fetchRemoteProductById(Long id) {
+        return null;
+    }
+
+
+    // TODO paginacion
+
+    // Spring security
+
+
+    // Enviar datos a Apache Kafka
+
+    // Recibir datos de kafka
+
 
     // webClient traer el fabricante de un producto
     // webClient traer el fabricante y las reseñas del producto: zip para traer las peticiones a la vez

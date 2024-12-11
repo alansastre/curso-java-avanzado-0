@@ -216,6 +216,23 @@ public class ProductRouterTest {
         assertEquals(createdProduct.getQuantity(), savedProduct.getQuantity());
         assertEquals(createdProduct.getPrice(), savedProduct.getPrice());
     }
-    // delete
+
+
+    @Test
+    void delete() {
+        client.delete()
+                .uri("/api/route/products/{id}", product1.getId())
+                .exchange()
+                .expectStatus().isNoContent();
+
+        client.delete()
+                .uri("/api/route/products/{id}", product1.getId())
+                .exchange()
+                .expectStatus().isNotFound();
+
+        Product deleted = productRepository.findById(product1.getId()).block();
+        assertNull(deleted);
+    }
+
 
 }
