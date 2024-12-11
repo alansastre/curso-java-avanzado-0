@@ -4,6 +4,7 @@ import com.certidevs.entity.Product;
 import com.certidevs.repository.ProductRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,6 +26,7 @@ public class ProductService {
     }
 
     public Mono<Product> save(Product product) {
+        // opcional: asignar valores por defecto, también se puede hacer a nivel de base de datos
         product.setActive(true);
         product.setCreationDate(LocalDateTime.now());
         return productRepository.save(product);
@@ -44,6 +46,8 @@ public class ProductService {
                         return productRepository.save(productDB);
         });
     }
+
+
 
     public Flux<Product> increasePriceOfActiveProducts(Double percentage) {
 //        return productRepository.findAll()
@@ -100,6 +104,11 @@ public class ProductService {
                         return Mono.error(new IllegalArgumentException("Cantidad insuficiente"));
                     }
                 });
+    }
+
+    public Mono<Void> deleteById(Long id) {
+        // Alternativa:  setActive(false)
+        return productRepository.deleteById(id);
     }
 
     // webClient traer el fabricante de un producto
