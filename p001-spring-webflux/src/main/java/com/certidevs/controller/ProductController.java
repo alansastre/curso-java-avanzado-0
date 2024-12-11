@@ -106,7 +106,7 @@ public class ProductController {
     }
 
     @GetMapping("increase/{percentage}")
-    public Mono<ResponseEntity<Flux<Product>>> findAll(@PathVariable Double percentage) {
+    public Mono<ResponseEntity<Flux<Product>>> increasePriceOfActiveProducts(@PathVariable Double percentage) {
         if (percentage <= 0 || percentage > 50)
             return Mono.just(ResponseEntity.badRequest().build()); // 400
 
