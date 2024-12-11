@@ -16,14 +16,13 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @AutoConfigureWebTestClient
 public class ProductRouterTest {
 
-    // MockMvc
+    // Similar a MockMvc
     @Autowired
     private WebTestClient client;
 
@@ -100,5 +99,123 @@ public class ProductRouterTest {
 //                .expectBody()
 //                .jsonPath("$[0].title").isEqualTo("PRODUCT 1");
     }
+
+    @Test
+    void findById() {
+        client.get().uri("/api/route/products/{id}", product1.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Product.class)
+                .isEqualTo(product1)
+                .value(product -> {
+                    assertNotNull(product);
+                    assertEquals(product1.getId(), product.getId());
+                    assertEquals(product1.getTitle(), product.getTitle());
+                });
+    }
+
+    @Test
+    void findById_notFound() {
+        client.get().uri("/api/route/products/{id}", 9999)
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .isEmpty();
+    }
+
+    @Test
+    void create() {
+        Product product = Product.builder()
+                .title("Product Test")
+                .price(20.0)
+                .quantity(5)
+//                .active(false)
+//                .creationDate(LocalDateTime.now().minusDays(5))
+                .manufacturerId(manufacturer.getId())
+                .manufacturer(manufacturer)
+                .build();
+
+        client.post().uri("/api/route/products")
+                .bodyValue(product)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectHeader().value("location", location -> {
+                    assertNotNull(location);
+                    assertTrue(location.startsWith("/api/route/products/"));
+                })
+                .expectBody(Product.class)
+                // .isEqualTo(product) // no lo hacemos por que el de la respuesta tiene id y el nuestro no
+                .value(createdProduct -> {
+                    assertNotNull(createdProduct);
+                    assertNotNull(createdProduct.getId());
+                    assertEquals("Product Test", createdProduct.getTitle());
+                    assertTrue(createdProduct.getActive());
+                    assertNotNull(createdProduct.getCreationDate());
+                });
+    }
+
+    // update
+    @Test
+    void update() {
+        product1.setQuantity(60); // 50 -> 60
+        product1.setPrice(20.0); // 10.0 -> 20.0
+
+        client.put().uri("/api/route/products/{id}", product1.getId())
+                .bodyValue(product1)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Product.class)
+                .value(product -> {
+                    assertNotNull(product);
+                    assertEquals(product1.getId(), product.getId());
+                    assertEquals(product1.getQuantity(), product.getQuantity());
+                    assertEquals(product1.getPrice(), product.getPrice());
+                });
+
+        var savedProduct = productRepository.findById(product1.getId()).block();
+        assertNotNull(savedProduct);
+        assertEquals(product1.getQuantity(), savedProduct.getQuantity());
+        assertEquals(product1.getPrice(), savedProduct.getPrice());
+    }
+
+    @Test
+    void createAndUpdate() {
+        Product product = Product.builder()
+                .title("Product Test")
+                .price(20.0)
+                .quantity(5)
+                .manufacturerId(manufacturer.getId())
+                .manufacturer(manufacturer)
+                .build();
+
+        Product createdProduct = client.post().uri("/api/route/products")
+                .bodyValue(product)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(Product.class)
+                .returnResult()
+                .getResponseBody();
+
+        createdProduct.setPrice(30.0);
+        createdProduct.setQuantity(10);
+
+        client.put().uri("/api/route/products/{id}", createdProduct.getId())
+                .bodyValue(createdProduct)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Product.class)
+                .value(updatedProduct -> {
+                    assertNotNull(updatedProduct);
+                    assertEquals(createdProduct.getId(), updatedProduct.getId());
+                    assertEquals(createdProduct.getQuantity(), updatedProduct.getQuantity());
+                    assertEquals(createdProduct.getPrice(), updatedProduct.getPrice());
+                });
+
+        var savedProduct = productRepository.findById(createdProduct.getId()).block();
+        assertNotNull(savedProduct);
+        assertEquals(createdProduct.getQuantity(), savedProduct.getQuantity());
+        assertEquals(createdProduct.getPrice(), savedProduct.getPrice());
+    }
+    // delete
 
 }
