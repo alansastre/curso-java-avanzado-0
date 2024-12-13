@@ -1,5 +1,8 @@
 package com.certidevs.handler;
 
+import com.certidevs.dto.PaginatedProductResponse;
+import com.certidevs.dto.PaginatedResponse;
+import com.certidevs.dto.PaginatedResponseLombok;
 import com.certidevs.entity.Product;
 import com.certidevs.service.ProductService;
 import lombok.AllArgsConstructor;
@@ -27,6 +30,74 @@ public class ProductHandler {
 
     public Mono<ServerResponse> findAll(ServerRequest request) {
         return ServerResponse.ok().body(productService.findAll(), Product.class);
+    }
+
+    // http://localhost:8080/api/route/products?page=2&size=10
+    public Mono<ServerResponse> findAllPaginated(ServerRequest request) {
+        int page = request.queryParam("page").map(Integer::parseInt).orElse(1);
+        int size = request.queryParam("size").map(Integer::parseInt).orElse(10);
+        int offset = (page - 1) * size;
+
+        // Lo óptimo sería hacer la paginación a nivel de repositorio directamente con SQL para extraer los datos mínimos
+
+        return ServerResponse.ok().body(
+                productService.count().flatMap(total ->
+                        productService.findAll()
+                                .skip(offset)
+                                .take(size)
+                                .collectList()
+                                .map(products -> new PaginatedProductResponse(
+                                        products,
+                                        page,
+                                        size,
+                                        total
+                                ))
+                        )
+
+                , PaginatedProductResponse.class);
+
+
+    }
+
+    public Mono<ServerResponse> findAllPaginatedWithGeneric(ServerRequest request) {
+        int page = request.queryParam("page").map(Integer::parseInt).orElse(1);
+        int size = request.queryParam("size").map(Integer::parseInt).orElse(10);
+        int offset = (page - 1) * size;
+
+
+//        return ServerResponse.ok().body(
+//                productService.count().flatMap(total ->
+//                        productService.findAll()
+//                                .skip(offset)
+//                                .take(size)
+//                                .collectList()
+//                                .map(products -> new PaginatedResponse<Product>(
+//                                        products,
+//                                        page,
+//                                        size,
+//                                        total
+//                                ))
+//                )
+//
+//                , PaginatedResponse.class);
+
+        return ServerResponse.ok().body(
+                productService.count().flatMap(total ->
+                        productService.findAll()
+                                .skip(offset)
+                                .take(size)
+                                .collectList()
+                                .map(products -> PaginatedResponseLombok.<Product>builder()
+                                        .items(products)
+                                        .page(page)
+                                        .size(size)
+                                        .total(total)
+                                        .build())
+                )
+
+                , PaginatedResponseLombok.class);
+
+
     }
 
     public Mono<ServerResponse> findById(ServerRequest request) {

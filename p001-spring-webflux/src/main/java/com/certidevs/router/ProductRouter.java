@@ -17,6 +17,7 @@ public class ProductRouter {
         return RouterFunctions.route()
                 .path("/api/route/products", builder -> builder
                         .GET("", handler::findAll)
+                        .GET("/paginated", handler::findAllPaginated)
                         .GET("{id}", handler::findById)
                         .POST("", handler::create)
                         .PUT("{id}", handler::update)

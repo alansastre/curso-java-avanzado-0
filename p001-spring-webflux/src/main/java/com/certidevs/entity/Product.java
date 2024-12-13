@@ -1,11 +1,14 @@
 package com.certidevs.entity;
 
+import com.certidevs.dto.RatingDTO;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @NoArgsConstructor
@@ -28,6 +31,8 @@ public class Product {
 
     @Transient
     private Manufacturer manufacturer;
+    @Transient
+    private List<RatingDTO> ratings = new ArrayList<>();
 
     @Override
     public boolean equals(Object o) {

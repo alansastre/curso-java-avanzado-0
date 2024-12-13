@@ -1,22 +1,30 @@
 package com.certidevs.service;
 
 import com.certidevs.dto.ProductStoreDTO;
+import com.certidevs.dto.RatingDTO;
+import com.certidevs.entity.Manufacturer;
 import com.certidevs.entity.Product;
 import com.certidevs.repository.ProductRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @AllArgsConstructor
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final WebClient manufacturersClient;
+    private final WebClient ratingsClient;
 
     public Flux<Product> findAll() {
 //        return productRepository.findAll();
@@ -112,23 +120,84 @@ public class ProductService {
         return productRepository.deleteById(id);
     }
 
+    public Mono<Long> count() {
+        return productRepository.count();
+    }
+
 
     // WebClient para hacer fetch de datos remotos
     public Mono<Product> findByIdWithManufacturer() {
         return null;
     }
     public Flux<Product> findAllWithManufacturers() {
-        return null;
+
+        // supongamos que el manufacturer está en otro microservicio y hay que traerlos
+
+        // opción 1: lanza una petición al microservicio de fabricantes por cada producto (ineficiente)
+        return productRepository.findAll()
+                .flatMap(product -> manufacturersClient.get()
+                        .uri("/api/manufacturers/{id}", product.getManufacturerId())
+                        .retrieve()
+                        .bodyToMono(Manufacturer.class)
+                        .map(manufacturer -> {
+                            product.setManufacturer(manufacturer);
+                            return product;
+                        }).defaultIfEmpty(product)
+                );
+
+        // opción 2: traer todos los fabricantes en una sola query por sus ids para procesarlos de golpe
+
+//        return productRepository.findAll()
+//                .collectMultimap(Product::getManufacturerId)
+//                .flatMapMany(manufacturerIdToProductsMap -> {
+//                    List<Long> ids = new ArrayList<>(manufacturerIdToProductsMap.keySet());
+//                    return manufacturersClient.post()
+//                            .uri("/api/manufacturers/search")
+//                            .bodyValue(ids)
+//                            .retrieve()
+//                            .bodyToFlux(Manufacturer.class)
+//                            .flatMap(manufacturer -> {
+//                                Collection<Product> products =  manufacturerIdToProductsMap.get(manufacturer.getId());
+//                                products.forEach(product -> product.setManufacturer(manufacturer));
+//                                return Flux.fromIterable(products);
+//                            });
+//                });
+
     }
-    public Mono<Product> findByIdWithManufacturerAndReviews() {
-        return null;
+    public Flux<Product> findAllWithManufacturersAndRatings() {
+
+        return productRepository.findAll()
+                .flatMap(product -> {
+                    // get manufactuter
+                    Mono<Manufacturer> manufacturerMono = manufacturersClient.get()
+                            .uri("/api/manufacturer/{id}", product.getManufacturerId())
+                            .retrieve()
+                            .bodyToMono(Manufacturer.class)
+                            .onErrorResume(e -> Mono.empty());
+
+                    // get ratings
+                    Flux<RatingDTO> ratingFlux = ratingsClient.get()
+                            .uri("/api/ratings?productId={id}", product.getId())
+                            .retrieve()
+                            .bodyToFlux(RatingDTO.class)
+                            .onErrorResume(e -> Flux.empty());
+
+                    // zip
+                    return Mono.zip(manufacturerMono, ratingFlux.collectList())
+                            .map(tuple -> {
+                                product.setManufacturer(tuple.getT1());
+                                product.setRatings(tuple.getT2());
+                                return product;
+                            })
+                            .defaultIfEmpty(product);
+                });
     }
+
     public Mono<Product> fetchRemoteProductById(Long id) {
         return null;
     }
 
 
-    // TODO paginacion
 
     // Spring security
 
