@@ -40,3 +40,9 @@ Con Spring Cloud:
 Con Reactor:
 
 * https://mvnrepository.com/artifact/io.projectreactor.kafka/reactor-kafka
+
+## SPRING KAFKA
+
+Hemos usado KafkaTemplate de Spring Kafka para Producers.
+
+Hemos usar @KafkaListener de Spring Kafka para Consumers.
