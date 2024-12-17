@@ -7,6 +7,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Mono;
 
 import java.util.HashSet;
@@ -43,6 +45,6 @@ public class KeycloakRolesConverter implements Converter<Jwt, Mono<AbstractAuthe
 
 
 
-        return Mono.just(new UsernamePasswordAuthenticationToken(source.getSubject(), source, authorities));
+        return Mono.just(new JwtAuthenticationToken(source, authorities));
     }
 }

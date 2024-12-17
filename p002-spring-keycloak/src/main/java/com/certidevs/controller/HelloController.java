@@ -36,4 +36,9 @@ public class HelloController {
     public Mono<Authentication> hello3(Mono<Authentication> auth) {
         return auth;
     }
+
+    @GetMapping("/hello4")
+    public Mono<Authentication> hello4(Mono<Authentication> auth) {
+        return auth;
+    }
 }
