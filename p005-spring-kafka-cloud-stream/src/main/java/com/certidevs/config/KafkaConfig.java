@@ -102,13 +102,14 @@ public class KafkaConfig {
 
                     int amount = (int)(1 + tick);
                     if (tick == 4) {
-                        amount = -1;
+                        amount = -1; // Ponemos número negativo para simular error en el consumer orderProcessor
                     }
 
                     var order = new Order(tick, "deposit", amount);
                     log.info("orderProducer creado order {}" , order);
                     return order;
-                }).doOnNext(order -> log.info("orderProducer Emitido order {}", order))
+                })
+                .doOnNext(order -> log.info("orderProducer Emitido order {}", order))
                 .onErrorResume(e -> {
                     log.error("Error orderProducer", e);
                     return Flux.empty();
@@ -117,42 +118,45 @@ public class KafkaConfig {
 
     // consumer de Order que también produce Notification
     // Estrategia 1: onError continue no se propaga a Spring Cloud Steam, sin DLQ
-    @Bean
-    public Function<Flux<Order>, Flux<Notification>> orderProcessor() {
-
-        return orderFlux -> orderFlux.flatMap(order -> {
-
-            if (order.amount() < 0) throw new RuntimeException("orderProcessor Cantidad no válida: " + order.amount());
-
-            // operaciones
-            Notification notification = new Notification("admin@localhost", "Order procesado correctamente");
-            log.info("orderProcessor creado notification {}", notification);
-            return Flux.just(notification);
-
-
-        }).doOnError(e -> {
-            // se ejecuta cuando el flatmap lanza excepción
-            log.error("orderProcessor Error creando o procesando order");
-                })
-        .onErrorContinue((throwable, o) -> log.info("orderProcessor onErrorContinue"));
-    }
+//    @Bean
+//    public Function<Flux<Order>, Flux<Notification>> orderProcessor() {
+//
+//        return orderFlux -> orderFlux.flatMap(order -> {
+//
+//            if (order.amount() < 0) throw new RuntimeException("orderProcessor Cantidad no válida: " + order.amount());
+//
+//            // operaciones
+//            Notification notification = new Notification("admin@localhost", "Order procesado correctamente");
+//            log.info("orderProcessor creado notification {}", notification);
+//            return Flux.just(notification);
+//
+//
+//        }).doOnError(e -> {
+//            // se ejecuta cuando el flatmap lanza excepción
+//            log.error("orderProcessor Error creando o procesando order");
+//        })
+//        // Si hacemos onErrorContinue se gestiona aquí el error y no se propaga a Spring cloud stream ni DLQ
+//        .onErrorContinue((throwable, o) -> log.info("orderProcessor onErrorContinue"));
+//    }
 
 
     // Estrategia 2: se propaga a Spring Cloud Stream, con DLQ, NO USAR onErrorContinue
-// @Bean
-//    public Function<Order, Notification> orderProcessor() {
-//
-//        // Requiere configuración en application.properties configurar el topic DLQ
-//        // Se propaga la excepción a Spring Cloud Stream y mueve el dato a topic DLQ
-//     return order -> {
-//         if (order.amount() < 0) throw new RuntimeException("orderProcessor Cantidad no válida: " + order.amount());
-//
-//         // operaciones
-//         Notification notification = new Notification("admin@localhost", "Order procesado correctamente");
-//         log.info("orderProcessor creado notification {}", notification);
-//         return notification;
-//     };
-// }
+    @Bean
+    public Function<Order, Notification> orderProcessor() {
+        return order -> {
+            if (order.amount() < 0) {
+                // Lanzar excepción y que se propague a Spring Cloud Stream para que mueva el dato a topic DLQ
+                throw new RuntimeException("Cantidad incorrecta " + order.amount());
+            }
+
+            // logica de negocio
+            return new Notification("admin@localhost", "Mensaje");
+
+        };
+    }
+
+
+
 
 
     // consumer de notification
